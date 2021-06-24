@@ -353,12 +353,13 @@ class SourceGenerator {
                 guard !pattern.isEmpty else { return [] }
                 return Glob(pattern: "\(rootSourcePath)/\(pattern)")
                     .map { Path($0) }
+                    .filter { !$0.isIgnoredSourcePath() }
                     .map {
                         guard $0.isDirectory else {
                             return [$0]
                         }
 
-                        return (try? $0.recursiveChildren()) ?? []
+                        return (try? $0.recursiveChildrenSources()) ?? []
                     }
                     .reduce([], +)
             }
@@ -369,6 +370,7 @@ class SourceGenerator {
     /// Checks whether the path is not in any default or TargetSource excludes
     func isIncludedPath(_ path: Path, excludePaths: Set<Path>, includePaths: Set<Path>) -> Bool {
         !defaultExcludedFiles.contains(where: { path.lastComponent.contains($0) })
+            && !path.isIgnoredSourcePath()
             && !(path.extension.map(defaultExcludedExtensions.contains) ?? false)
             && !excludePaths.contains(path)
             // If includes is empty, it's included. If it's not empty, the path either needs to match exactly, or it needs to be a direct parent of an included path.
@@ -561,12 +563,27 @@ class SourceGenerator {
     /// creates source files
     private func getSourceFiles(targetType: PBXProductType, targetSource: TargetSource, buildPhases: [Path: BuildPhaseSpec]) throws -> [SourceFile] {
 
+//        let started = Date()
+        
         // generate excluded paths
         let path = project.basePath + targetSource.path
         let excludePaths = getSourceMatches(targetSource: targetSource, patterns: targetSource.excludes)
         // generate included paths. Excluded paths will override this.
         let includePaths = getSourceMatches(targetSource: targetSource, patterns: targetSource.includes)
 
+//        do {
+//            let finished = Date()
+//            let elapsed = finished.timeIntervalSince(started)
+//            dump((
+//                function: #function,
+//                targetSource: targetSource,
+//                elapsed: String(format: "%0.2f", elapsed),
+//                included: includePaths.count,
+//                excluded: excludePaths.count,
+//                buildPhases: buildPhases
+//            ))
+//        }
+        
         let type = resolvedTargetSourceType(for: targetSource, at: path)
 
         let customParentGroups = (targetSource.group ?? "").split(separator: "/").map { String($0) }
