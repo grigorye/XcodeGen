@@ -81,4 +81,16 @@ extension Path {
         let relativePath = try child.relativePath(from: self)
         return relativePath.components.allSatisfy { $0 != ".." }
     }
+    
+    /// Returns path to all files contained in the directory or subdirectory that might be considered as source files.
+    public func recursiveChildrenSources() throws -> [Path] {
+        try recursiveChildren().filter {
+            !$0.isIgnoredSourcePath()
+        }
+    }
+    
+    /// Returns whether `self` should be considered a source file.
+    public func isIgnoredSourcePath() -> Bool {
+        components.contains("__Snapshots__") || (components.last == ".DS_Store")
+    }
 }
