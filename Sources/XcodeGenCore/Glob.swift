@@ -7,6 +7,7 @@
 //  Adapted from https://gist.github.com/efirestone/ce01ae109e08772647eb061b3bb387c3
 
 import Foundation
+import PathKit
 
 public let GlobBehaviorBashV3 = Glob.Behavior(
     supportsGlobstar: false,
@@ -177,12 +178,18 @@ public class Glob: Collection {
                 if blacklistedDirectories.contains(subpath) {
                     return nil
                 }
+                if Path(subpath).isIgnoredSourcePath() {
+                    return nil
+                }
                 let firstLevel = URL(fileURLWithPath: path).appendingPathComponent(subpath, isDirectory: true)
                 guard isDirectory(path: firstLevel.path) else {
                     return nil
                 }
                 var subDirs: [URL] = try FileManager.default.subpathsOfDirectory(atPath: firstLevel.path)
                     .compactMap { subpath -> URL? in
+                        if Path(subpath).isIgnoredSourcePath() {
+                            return nil
+                        }
                         let full = firstLevel.appendingPathComponent(subpath, isDirectory: true)
                         return isDirectory(path: full.path) ? full : nil
                     }
@@ -224,6 +231,10 @@ public class Glob: Collection {
                     if (!includeFiles && !isDirectory) || (!includeDirectories && isDirectory) {
                         continue
                     }
+                }
+                
+                if Path(path).isIgnoredSourcePath() {
+                    continue
                 }
 
                 paths.append(path)
