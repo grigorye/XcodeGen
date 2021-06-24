@@ -251,7 +251,7 @@ extension Project {
             files.append(contentsOf: target.configFilePaths)
             for source in target.sources {
                 let sourcePath = basePath + source.path
-                let sourceChildren = (try? sourcePath.recursiveChildren()) ?? []
+                let sourceChildren = (try? sourcePath.recursiveChildrenSources()) ?? []
                 files.append(contentsOf: sourceChildren)
                 files.append(sourcePath)
             }
